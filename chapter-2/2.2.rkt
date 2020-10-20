@@ -288,3 +288,87 @@
                 0
                 (map (lambda (x) (x))
                      (enumerate-tree t))))
+
+; 2.36
+(define (accumulate-n op init seqs)
+    (if (null? (car seqs))
+        nil
+        (cons (accumulate op init (map car seqs))
+              (accumulate-n op init (map cdr seqs)))))
+
+; 2.37
+(define (matrix-*-vector m v)
+    (map (lambda (col) (dot-product v col)) m))
+
+(define (transpose mat)
+    (accumulate-n cons nil mat))
+
+; 2.38
+(define (fold-left op initial sequence)
+    (define (iter result rest)
+        (if (null? rest)
+            rest
+            (iter (op result (car rest))
+                  (cdr rest))))
+    (iter initial sequence))
+
+; 2.39
+(define (reverse sequence)
+    (fold-right (lambda (x y) ((append y (list x)))) nil sequence))
+
+
+
+
+(define (enumerate-interval a b)
+    (if (> a b)
+        nil
+        (cons a (enumerate-interval (+ a 1) b))))
+
+(define (flatmap proc seq)
+    (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+    (prime? (+ (car pair) (cdr pair))))
+
+(define (make-pair-sum pair)
+    (list (car pair) (cdr pair) (+ (car pair) (cdr pair))))
+
+(define (prime-sum-pairs n)
+    (map make-pair-sum
+         (filter prime-sum?
+                 (flatmap
+                    (lambda (i)
+                        (map (lambda (j) (list i j))
+                             (enumerate-interval 1 (- i 1))))
+                        (enumerate-interval 1 n)))))
+
+(define (permutaions s)
+    (if (null? s)
+        (list nil)
+        (flatmap (lambda (x)
+                    (map (lambda (p) (cons x p))
+                         (permutaions (remove x s))))
+                 s)))
+
+(define (remove item sequence)
+    (filter (lambda (x) (not (= x item)))
+            sequence))
+
+; 2.40
+(define (add-j i)
+    (map (lambda (j) (list i j)) (enumerate-interval 1 (- i 1))))
+(define (unique-pairs n)
+    (flatmap add-j (enumerate-interval 1 n)))
+
+(define (prime-sum-pairs-u n)
+    (map make-pair-sum
+         (filter prime-sum?
+                 (unique-pair n))))
+
+; 2.41
+(define (add-j i)
+    (filter (lambda (p) (not (= (car p) (cadr p))))
+            (map (lambda (j) (list i j)) (enumerate-interval 1 i))))
+
+(define (add-k p)
+    )
