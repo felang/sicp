@@ -22,6 +22,9 @@
 (define (sub x y) (apply-generic 'sub x y))
 (define (mul x y) (apply-generic 'mul x y))
 (define (div x y) (apply-generic 'div x y))
+(define (equ? x y) (apply-generic 'equ? x y))
+(define (=zero? x y) (apply-generic '=zero? x y))
+
 
 
 (define (install-rectangular-package)
@@ -86,6 +89,10 @@
          (lambda (x y) (tag (* x y))))
     (put 'div '(scheme-number scheme-number)
          (lambda (x y) (tag (/ x y))))
+    (put 'equ? '(scheme-number scheme-number)
+         (lambda (x y) (= x y)))
+    (put '=zero? '(scheme-number)
+         (lambda (x) (= x 0)))
     (put 'make 'scheme-number
          (lambda (x) (tag x)))
     'done)
@@ -122,6 +129,10 @@
         (lambda (x y) (tag (mul-rat x y))))
     (put 'div '(rational rational)
         (lambda (x y) (tag (div-rat x y))))
+    (put 'equ? '(rational rational)
+        (lambda (x y) (and (= (numer x) (numer y)) (= (denom x) (denom y)))))
+    (put '=zero? '(rational)
+        (lambda (x) (= (numer x) 0)))
     (put 'make 'rational
         (lambda (n d) (tag (make-rat n d))))
     'done)
@@ -156,6 +167,10 @@
         (lambda (z1 z2) (tag (mul-complex z1 z2))))
     (put 'div '(complex complex)
         (lambda (z1 z2) (tag (div-complex z1 z2))))
+    (put 'equ? '(complex complex)
+        (lambda (z1 z2) (and (= (real-part z1) (real-part z2)) (= (imag-part z1) (imag-part z2)))))
+    (put '=zero? '(complex)
+        (lambda (z1) (and (= (real-part z1) 0) (= (imag-part =)))))
     (put 'make-from-real-imag 'complex
         (lambda (x y) (tag (make-from-real-imag x y))))
     (put 'make-from-mag-ang 'complex
@@ -167,3 +182,183 @@
 (define (make-complex-from-mag-ang r a)
     ((get 'make-complex-from-mag-ang 'complex) r a))
 
+; 2.78
+(define (type-tag datum)
+    (if (numer? datum)
+        'scheme-number
+        (if (pair? datum)
+            (car datum)
+            (error "Bad tagged datum --- TYPE_TAG" datum))))
+
+(define (contents datum)
+    (if (number? datum)
+        datum
+        (if (pair? datum)
+        (cdr datum)
+        (error "Bad tagged datum -- CONTENTS" datum))))
+
+(define (attach-tag type-tag contents)
+    (if (numer? contents)
+        contents
+        (cons type-tag contents)))
+
+; 2.79
+(define (add x y) (apply-generic 'add x y))
+(define (sub x y) (apply-generic 'sub x y))
+(define (mul x y) (apply-generic 'mul x y))
+(define (div x y) (apply-generic 'div x y))
+(define (equ? x y) (apply-generic 'equ? x y))
+; 2.80
+(define (=zero? x y) (apply-generic '=zero? x y))
+
+
+; 2.5.2
+; add procedure
+(define (add-complex-to-schemenum z x)
+    (make-from-real-imag (+ (real-part z) x)
+                         (imag-part z)))
+
+(put 'add '(complex scheme-number)
+    (lambda (z x) (tag （add-complex-to-schemenum z x)))
+
+; transfrom type
+(define (scheme-number->complex n)
+    (make-complex-from-real-imag (contents n) 0))
+(put-coerction 'scheme-number 'complex scheme-number->complex)
+
+(define (apply-generic op . args)
+    (let ((type-tags (map type-tag args)))
+        (let ((proc (get op type-tags)))
+            (if proc
+                (apply proc (map contents args))
+                (if (= (length args) 2)
+                    (let ((type1 (car type-tags))
+                          (type2 (cadr type-tags))
+                          (a1 (car args))
+                          (a2 (cadr args)))
+                        (let ((t1->t2 (get-coercion type1 type2))
+                              (t2->t1 (get-coercion type2 type1)))
+                            (cond (t1->t2
+                                   (apply-generic op (t1->t2 a1) a2))
+                                  (t2->t1
+                                   (apply-generic op a1 (t2->t1 a2)))
+                                  (else
+                                   (error "No method for these types"
+                                          (list op type-tags))))))
+                    (error "No method for these types"
+                           (list op type-tags)))))))
+
+; 2.81
+(define (apply-generic op . args)
+    (let ((type-tags (map type-tag args)))
+        (let ((proc (get op type-tags)))
+            (if proc
+                (apply proc (map contents args))
+                (if (= (length args) 2)
+                    (let ((type1 (car type-tags))
+                          (type2 (cadr type-tags))
+                          (a1 (car args))
+                          (a2 (cadr args)))
+                        (if (eq? type1 type2)
+                            (error "No method for these types"
+                                          (list op type-tags))
+                            (let ((t1->t2 (get-coercion type1 type2))
+                                  (t2->t1 (get-coercion type2 type1)))
+                                (cond (t1->t2
+                                    (apply-generic op (t1->t2 a1) a2))
+                                    (t2->t1
+                                    (apply-generic op a1 (t2->t1 a2)))
+                                    (else
+                                    (error "No method for these types"
+                                            (list op type-tags)))))))
+                    (error "No method for these types"
+                           (list op type-tags)))))))
+
+; 2.82
+
+; 2.83
+; integer
+(define (raise i) (make-rat i 1))
+(define (raise r) (make-real (/ (numer x) (denom x)))
+(define (raise real) (make-from-real-imag x 0))
+(put 'raise 'integer raise)
+(put 'raise 'rat raise)
+(put 'raise 'real raise)
+(define (raise x) (apply-generic 'raise x))
+; 2.84
+(define (level type)
+    (cond ((eq? type 'integer) 0)
+          ((eq? type 'rat) 1)
+          ((eq? type 'real) 2)
+          ((eq? type 'complex) 3)
+          (else (error "Have not type -- LEVEL" type)))))
+
+(define (apply-generic op . args)
+    (let ((type-tags (map type-tag args)))
+        (let ((proc (get op type-tags)))
+            (if proc
+                (apply proc (map contents args))
+                (if (= (length args) 2)
+                    (let ((type1 (car type-tags))
+                          (type2 (cadr type-tags))
+                          (a1 (car args))
+                          (a2 (cadr args)))
+                        (let ((level1 (level type1))
+                              (level2 (level type2))
+                            (cond ((< level1 level2)
+                                   (apply-generic op (raise a1) a2))
+                                  ((> level1 level2)
+                                   (apply-generic op a1 (raise a2)))
+                                  (else
+                                    (error "No method for these types"
+                                           (list op type-tags)))))))
+                    (error "No method for these types"
+                           (list op type-tags)))))))
+
+
+; 2.85
+; complex
+(define (projext z) (make-real (real-part z)))
+
+; 2.5.3
+(define (add-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (make-poly (variable p1)
+                   (add-terms (term-list p1)
+                              (term-list p2)))
+        (error "Polys not in same var -- ADD-POLY" (list p1 p2))))
+
+(define (mul-poly p1 p2)
+    (if (same-variable? (variable p1) (variable p2))
+        (make-poly (variable p1)
+                   (mul-terms (term-list p1)
+                              (term-list p1)))
+        (error "Polys not in same var -- MUL_POLY" (list p1 p2))))
+
+(define (install-polynomial-package)
+    (define (make-poly variable term-list)
+        (cons variable term-list))
+    (define (variable p) (car p))
+    (define (term-list p) (cdr p))
+    (define (add-poly p1 p2)
+        (if (same-variable? (variable p1) (variable p2))
+            (make-poly (variable p1)
+                    (add-terms (term-list p1)
+                                (term-list p2)))
+            (error "Polys not in same var -- ADD-POLY" (list p1 p2))))
+
+    (define (mul-poly p1 p2)
+        (if (same-variable? (variable p1) (variable p2))
+            (make-poly (variable p1)
+                    (mul-terms (term-list p1)
+                                (term-list p1)))
+            (error "Polys not in same var -- MUL_POLY" (list p1 p2))))
+
+    (define (tag p) (attach-tag 'polynomial p))
+    (put 'add '(polynomial polynomial)
+        (lambda (p1 p2) (tag (add-poly p1 p2))))
+    (put 'mul '(polynomial polynomial)
+        (lambda (p1 p2) (tag (mul-poly p1 p2))))
+    (put 'make 'polynomial
+        (lambda (var terms) (tag (make-poly var terms))))
+    'done)
