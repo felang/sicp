@@ -128,5 +128,5 @@ w
         
         dispatch))
 
-(define (front-queue z) (z 'front-queue))
+(define (front-queue z) (z 'front-q))
 ; 3.23
