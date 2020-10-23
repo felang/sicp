@@ -122,4 +122,11 @@ w
 (define (make-queue)
     (let ((front-ptr '())
           (rear-ptr '()))
+        (define (dispatch m) (
+            (cond ((eq? m 'front-queue) (car front-ptr)))
         ))
+        
+        dispatch))
+
+(define (front-queue z) (z 'front-queue))
+; 3.23
