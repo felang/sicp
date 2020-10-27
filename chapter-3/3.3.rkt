@@ -95,7 +95,7 @@ w
 (define (front-queue queue)
     (if (empty-queue? queue)
         (error "FRONT called with an empty queue" queue)
-        (car (front-prt queue))))
+        (car (front-ptr queue))))
 
 (define (insert-queue! queue item)
     (let ((new-pair (cons item '())))
@@ -393,7 +393,7 @@ w
 (and-gate d e s)
 
 (define (half-adder a b s c)
-    (let ((d (make-wire)) (e (mske-wire)))
+    (let ((d (make-wire)) (e (make-wire)))
         (or-gate a b d)
         (and-gate a b c)
         (inverter c e)
@@ -422,6 +422,16 @@ w
     (cond ((= s 0) 1)
           ((= s 1) 0)
           (else (error "Invalid signal" s))))
+
+(define (logical-and s1 s2)
+    (if (and (= s1 1) (= s2 1))
+        1
+        0))
+
+(define (logical-or s1 s2)
+    (if (or (= s1 1) (= s2 1))
+        1
+        0))
 
 (define (and-gate a1 a2 output)
     (define (and-action-procedure)
@@ -556,7 +566,7 @@ w
 (define (first-agenda-item agenda)
     (if (empty-agenda? agenda)
         (error "Agenda is empty -- FIRST-AGENDA-ITEM")
-        (let ((first-set (first-segment agenda)))
+        (let ((first-seg (first-segment agenda)))
             (set-current-time! agenda (segment-time first-seg))
             (front-queue (segment-queue first-seg)))))
 
@@ -600,3 +610,7 @@ w
 (propagate)
 (set-signal! input-2 1)
 (propagate)
+
+; 3.31
+
+; 3.32
