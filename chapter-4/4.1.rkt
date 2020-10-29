@@ -18,7 +18,6 @@
                   (list-of-values (operands exp) env)))
           (else
            (error "Unknown expression type -- EVAL" exp))))
-;(define apply-in-underlying-scheme apply)
 
 (define (new-apply procedure arguments)
     (cond ((primitive-procedure? procedure)
